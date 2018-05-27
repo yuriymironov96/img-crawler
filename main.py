@@ -1,6 +1,6 @@
+import os
 import random
 import string
-import os
 
 import requests
 from bs4 import BeautifulSoup
@@ -26,12 +26,17 @@ def generate_url():
 
 def get_response(img_url):
     r = requests.get(ROOT_URL + img_url, headers=HEADERS)
-    html_response = BeautifulSoup(r.text, 'html.parser')
+    if r.status_code == 200:
+        return r
+    return None
+
+def parse_html_response(response):
+    html_response = BeautifulSoup(response.text, 'html.parser')
     img_tag = html_response.find(class_=IMG_ID)
     if not img_tag or img_tag['src'].startswith('//'):
         return None
     else:
-        save_image(img_tag, img_url)
+        return img_tag
 
 
 def save_image(tag, file_name):
@@ -51,7 +56,15 @@ def save_image(tag, file_name):
 
 def main():
     for i in range(ITERATION_COUNT):
-        get_response(generate_url())
+        url_part = generate_url()
+        response = get_response(url_part)
+        if not response:
+            continue
+        image = parse_html_response(response)
+        if not image:
+            continue
+        else:
+            save_image(image, url_part)
 
 
 if __name__ == '__main__':
